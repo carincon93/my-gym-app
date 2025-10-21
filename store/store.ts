@@ -28,3 +28,13 @@ export const useWorkoutSessionStore = create<WorkoutSessionProps>((set) => ({
   setHasWorkoutSessionStarted: (hasWorkoutSessionStarted) =>
     set({ hasWorkoutSessionStarted }),
 }));
+
+type HideShowTabMenuProps = {
+  showTabMenu: boolean;
+  setShowTabMenu: (showTabMenu: boolean) => void;
+};
+
+export const useHideShowTabMenuStore = create<HideShowTabMenuProps>((set) => ({
+  showTabMenu: true,
+  setShowTabMenu: (showTabMenu) => set({ showTabMenu }),
+}));

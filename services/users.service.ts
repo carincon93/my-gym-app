@@ -15,10 +15,10 @@ export const addUser = async (height: number, gender: string) => {
   return id;
 };
 
-export const getAllUsers = async () => {
+export const getFirstUser = async () => {
   const drizzleDb = await getDrizzleDb();
 
-  return await drizzleDb.select().from(users);
+  return await drizzleDb.select().from(users).limit(1);
 };
 
 export const updateUser = async (

@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { drizzle } from "drizzle-orm/expo-sqlite";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
+import { useKeepAwake } from "expo-keep-awake";
 import { Stack } from "expo-router";
 import { SQLiteProvider, useSQLiteContext } from "expo-sqlite";
 import { StatusBar } from "expo-status-bar";
@@ -15,8 +16,8 @@ import { Suspense, useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
+import { AnimatedTabMenu } from "@/components/animated-tabs";
 import { DATABASE_NAME } from "@/constants/constants";
-import { ImageCacheProvider } from "@/context/image-cache-context";
 import { seedExercises } from "@/db/seed";
 import migrations from "@/drizzle/migrations";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -67,18 +68,40 @@ function AppProviders() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <HeroUINativeProvider>
-          <ImageCacheProvider>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="height" options={{ headerShown: false }} />
-              <Stack.Screen name="weight" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="split-days"
-                options={{ headerShown: false }}
-              />
-            </Stack>
-            <StatusBar style="auto" />
-          </ImageCacheProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: "#000000" },
+            }}
+          >
+            <Stack.Screen
+              name="(config)/height"
+              options={{
+                animation: "slide_from_right",
+                animationDuration: 350,
+                contentStyle: { backgroundColor: "#FF3E3E" },
+              }}
+            />
+            <Stack.Screen
+              name="(config)/weight"
+              options={{
+                animation: "slide_from_right",
+                animationDuration: 350,
+                contentStyle: { backgroundColor: "#FF3E3E" },
+              }}
+            />
+            <Stack.Screen
+              name="(config)/split-days"
+              options={{
+                animation: "slide_from_right",
+                animationDuration: 350,
+                contentStyle: { backgroundColor: "#131010" },
+              }}
+            />
+            <Stack.Screen name="(config)/favs-exercises" />
+          </Stack>
+          <StatusBar style="auto" />
+          <AnimatedTabMenu />
         </HeroUINativeProvider>
       </ThemeProvider>
     </QueryClientProvider>
@@ -86,6 +109,7 @@ function AppProviders() {
 }
 
 export default function RootLayout() {
+  useKeepAwake();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Suspense>

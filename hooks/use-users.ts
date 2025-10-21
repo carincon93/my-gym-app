@@ -1,7 +1,7 @@
 import {
   addUser,
   deleteUser,
-  getAllUsers,
+  getFirstUser,
   updateUser,
 } from "@/services/users.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,32 +9,38 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 export function useUsers() {
   const queryClient = useQueryClient();
 
-  const { data: users, isLoading } = useQuery({
+  const { data: user, isLoading } = useQuery<
+    { id: string; height: number; gender: string } | undefined
+  >({
     queryKey: ["users"],
-    queryFn: () => getAllUsers(),
-  });
-
-  const addMutation = useMutation({
-    mutationFn: ({ height, gender }: { height: number; gender: string }) =>
-      addUser(height, gender),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+    queryFn: async () => {
+      const list = await getFirstUser();
+      return list[0];
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({
+  const createOrUpdateMutation = useMutation({
+    mutationFn: async ({
       id,
-      data,
+      height,
+      gender,
     }: {
-      id: string;
-      data: { height?: number; gender?: string };
-    }) => updateUser(id, data),
+      id?: string;
+      height: number;
+      gender: string;
+    }) => {
+      if (id) {
+        return updateUser(id, { height, gender });
+      }
+      return addUser(height, gender);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      queryClient.invalidateQueries({
-        queryKey: ["users", variables.id],
-      });
+      if (variables.id) {
+        queryClient.invalidateQueries({
+          queryKey: ["users", variables.id],
+        });
+      }
     },
   });
 
@@ -49,10 +55,9 @@ export function useUsers() {
   });
 
   return {
-    users,
+    user,
     isLoading,
-    addUser: addMutation.mutateAsync,
-    updateUser: updateMutation.mutateAsync,
+    createOrUpdateUser: createOrUpdateMutation.mutateAsync,
     deleteUser: deleteMutation.mutateAsync,
   };
 }

@@ -5,21 +5,14 @@ export const getExercisesByGroup = (
   return exercises?.filter((exercise) => exercise.muscleGroup === muscleGroup);
 };
 
-export const getShortDay = (): string => {
-  const today = new Date();
-  const shortDay = today.toLocaleDateString("en-US", { weekday: "short" });
-
-  return shortDay;
-};
-
-export const getCurrentSplitDay = ({
-  splitDays,
-}: {
-  splitDays?: SplitDay[];
-}) => {
-  const shortDay = getShortDay();
-  return splitDays?.find((splitDay) => splitDay.days.includes("Sat"));
-};
+// export const getCurrentSplitDay = ({
+//   splitDays,
+// }: {
+//   splitDays?: SplitDay[];
+// }) => {
+//   const shortDay = getShortDay();
+//   return splitDays?.find((splitDay) => splitDay.days.includes("Sat"));
+// };
 
 export const bodyGroups: { name: BodyGroup; image: any; workoutDay: string }[] =
   [
