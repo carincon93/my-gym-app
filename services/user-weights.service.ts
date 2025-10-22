@@ -3,6 +3,12 @@ import { userWeights } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import uuid from "react-native-uuid";
 
+export const getInitialWeight = async () => {
+  const drizzleDb = await getDrizzleDb();
+
+  return await drizzleDb.select().from(userWeights).limit(1);
+};
+
 export const addUserWeight = async (weight: number) => {
   const drizzleDb = await getDrizzleDb();
 

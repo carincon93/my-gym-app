@@ -17,6 +17,9 @@ export default function SplitDaysScreen() {
     addSplitDay({ days: "Wed-Sat", areUpperDays: true });
     addSplitDay({ days: "Thu-Sun", areUpperDays: false });
   };
+
+  riveRef?.play();
+
   return (
     <View className="flex-1 items-center justify-center">
       <Rive
@@ -24,7 +27,6 @@ export default function SplitDaysScreen() {
         artboardName="Split Days"
         resourceName="lilo"
         stateMachineName="State Machine 1"
-        autoplay={true}
         dataBinding={AutoBind(true)}
         style={{ width: "100%", height: "100%" }}
         fit={Fit.Cover}

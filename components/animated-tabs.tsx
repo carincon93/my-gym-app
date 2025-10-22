@@ -8,16 +8,16 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { useHideShowTabMenuStore } from "@/store/store";
+import { useWorkoutSessionStore } from "@/store/useWorkoutSessionStore";
 
 export const AnimatedTabMenu = () => {
-  const { showTabMenu, setShowTabMenu } = useHideShowTabMenuStore();
+  const { showTabMenu, dispatch } = useWorkoutSessionStore();
 
   const translateY = useSharedValue(200); // arranca fuera de pantalla
   const opacity = useSharedValue(0);
 
   const handleConfigButton = () => {
-    setShowTabMenu(false);
+    dispatch({ type: "SHOWTABMENU", payload: false });
     router.push("/height");
   };
 
@@ -37,6 +37,7 @@ export const AnimatedTabMenu = () => {
     transform: [{ translateY: translateY.value }],
     opacity: opacity.value,
   }));
+
   return (
     <Animated.View
       style={[

@@ -1,12 +1,11 @@
-import { useHideShowTabMenuStore } from "@/store/store";
+import { RivePlayer } from "@/components/rive-player";
+import { useWorkoutSessionStore } from "@/store/useWorkoutSessionStore";
 import { getCurrentDay } from "@/utils/get-current-day";
 import { router, useFocusEffect } from "expo-router";
-import React, { useCallback, useEffect, useMemo } from "react";
-import { StatusBar, View } from "react-native";
-import Rive, {
-  Alignment,
-  AutoBind,
-  Fit,
+import { Button } from "heroui-native";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import { AppState, StatusBar, View } from "react-native";
+import {
   useRive,
   useRiveBoolean,
   useRiveString,
@@ -15,22 +14,30 @@ import Rive, {
 
 export default function HomeScreen() {
   const { numberDay, shortDay } = useMemo(() => getCurrentDay(), []);
-  const { setShowTabMenu } = useHideShowTabMenuStore();
 
   const [setRiveRef, riveRef] = useRive();
   const [, setCurrentDayNumber] = useRiveString(riveRef, "CurrentDayNumber");
   const [, setCurrentDayText] = useRiveString(riveRef, "CurrentDayText");
+  const [workoutSessionInitialized, setWorkoutSessionInitialized] =
+    useRiveBoolean(riveRef, "IsPlaying");
 
-  // Play trigger: dispatch PLAY
+  const { dispatch, isPlaying, showTabMenu } = useWorkoutSessionStore();
+
+  // // Play trigger: dispatch PLAY
   useRiveTrigger(riveRef, "TriggPlay", async () => {
     console.log("Play clicked");
-    setShowTabMenu(false);
+    dispatch({ type: "PLAY" });
+
+    // if (!workoutSession)
+    //   setWorkoutSession({ timestamp: Date.now(), initialized: true });
   });
 
   // Stop trigger: dispatch STOP
   useRiveTrigger(riveRef, "TriggStop", async () => {
     console.log("Stop clicked");
-    setShowTabMenu(true);
+    dispatch({ type: "STOP" });
+
+    // clearWorkoutSession();
   });
 
   // AddSet trigger: dispatch AddSet
@@ -39,40 +46,77 @@ export default function HomeScreen() {
     router.push("/(config)/split-days");
   });
 
-  const [isPlaying, setIsPlaying] = useRiveBoolean(riveRef, "IsPlaying");
-  const [isUpperWorkout, setIsUpperWorkout] = useRiveBoolean(
-    riveRef,
-    "IsUpperWorkout"
-  );
+  // const [isUpperWorkout, setIsUpperWorkout] = useRiveBoolean(
+  //   riveRef,
+  //   "IsUpperWorkout"
+  // );
+
+  const isPlayingRef = useRef(isPlaying);
+
+  // keep ref updated but not trigger re-renders
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  const handlePlayButton = () => {
+    setWorkoutSessionInitialized(true);
+    riveRef?.trigger("TriggPlay");
+  };
+
+  const handleStopButton = () => {
+    setWorkoutSessionInitialized(false);
+    riveRef?.trigger("TriggStop");
+  };
+
+  const restoreState = useCallback(() => {
+    console.log("===ENTER TO THE RESTORE STATE===");
+    if (isPlayingRef.current) {
+      setWorkoutSessionInitialized(true);
+      riveRef?.trigger("TriggPlay");
+    } else {
+      setWorkoutSessionInitialized(false);
+      riveRef?.trigger("TriggStop");
+    }
+  }, [riveRef, setWorkoutSessionInitialized]);
 
   useEffect(() => {
-    if (!isPlaying) return;
-
-    setIsUpperWorkout(true);
-  }, [isPlaying, setIsUpperWorkout]);
-
-  useEffect(() => {
-    if (isPlaying) return;
-
     setCurrentDayText(shortDay);
     setCurrentDayNumber(numberDay);
-  }, [isPlaying, shortDay, numberDay, setCurrentDayText, setCurrentDayNumber]);
+  }, [shortDay, numberDay, setCurrentDayText, setCurrentDayNumber]);
 
   useFocusEffect(
     // Callback should be wrapped in `React.useCallback` to avoid running the effect too often.
     useCallback(() => {
       // Invoked whenever the route is focused.
-      console.log("Hello, I'm focused!");
-      setShowTabMenu(true);
+      console.log("=======Hello, I'm focused!=====");
+
+      restoreState();
 
       // Return function is invoked whenever the route gets out of focus.
       return () => {
-        console.log("This route is now unfocused.");
+        console.log("=============This route is now unfocused.=============");
       };
-    }, [])
+    }, [restoreState])
   );
 
-  console.log(isUpperWorkout);
+  // 🔹 Detecta cuando la app vuelve del background
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        console.log("=======Hello, I'm come back!=====");
+
+        // Restaurar el último estado
+        restoreState();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [restoreState]);
+
+  console.log("isPlaying", isPlaying);
+  console.log("showTabMenu", showTabMenu);
 
   return (
     <View className="flex-1 items-center justify-center">
@@ -81,16 +125,21 @@ export default function HomeScreen() {
         translucent
         barStyle="dark-content"
       />
-      <Rive
+
+      <View className="absolute z-10 bottom-50">
+        <Button onPress={handlePlayButton}>
+          <Button.LabelContent>Play</Button.LabelContent>
+        </Button>
+
+        <Button onPress={handleStopButton}>
+          <Button.LabelContent>Stop</Button.LabelContent>
+        </Button>
+      </View>
+
+      <RivePlayer
         ref={setRiveRef}
         artboardName="Training Day"
-        resourceName="lilo"
         stateMachineName="Training Day State Machine"
-        autoplay={true}
-        dataBinding={AutoBind(true)}
-        style={{ width: "100%", height: "100%" }}
-        fit={Fit.Cover}
-        alignment={Alignment.Center}
       />
     </View>
   );

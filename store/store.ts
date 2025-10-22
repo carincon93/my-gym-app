@@ -17,24 +17,3 @@ export const useSelectedItemsStore = create<SelectedItemsProps>((set) => ({
   workoutSetSelected: null,
   setSelectedWorkoutSet: (workoutSetSelected) => set({ workoutSetSelected }),
 }));
-
-type WorkoutSessionProps = {
-  hasWorkoutSessionStarted: boolean;
-  setHasWorkoutSessionStarted: (hasWorkoutSessionStarted: boolean) => void;
-};
-
-export const useWorkoutSessionStore = create<WorkoutSessionProps>((set) => ({
-  hasWorkoutSessionStarted: false,
-  setHasWorkoutSessionStarted: (hasWorkoutSessionStarted) =>
-    set({ hasWorkoutSessionStarted }),
-}));
-
-type HideShowTabMenuProps = {
-  showTabMenu: boolean;
-  setShowTabMenu: (showTabMenu: boolean) => void;
-};
-
-export const useHideShowTabMenuStore = create<HideShowTabMenuProps>((set) => ({
-  showTabMenu: true,
-  setShowTabMenu: (showTabMenu) => set({ showTabMenu }),
-}));

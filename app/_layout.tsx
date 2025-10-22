@@ -17,7 +17,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
 import { AnimatedTabMenu } from "@/components/animated-tabs";
-import { DATABASE_NAME } from "@/constants/constants";
 import { seedExercises } from "@/db/seed";
 import migrations from "@/drizzle/migrations";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -114,7 +113,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Suspense>
         <SQLiteProvider
-          databaseName={DATABASE_NAME}
+          databaseName="lilo-gym-db"
           options={{ enableChangeListener: true }}
           useSuspense
         >

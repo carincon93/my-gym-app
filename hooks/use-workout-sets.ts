@@ -11,7 +11,7 @@ export function useWorkoutSets(exerciseId: string | undefined) {
 
   const { data: sets, isLoading } = useQuery({
     queryKey: ["sets", exerciseId],
-    queryFn: () => getWorkoutSetsByExercisesId(exerciseId!!),
+    queryFn: () => getWorkoutSetsByExercisesId(exerciseId!),
     enabled: !!exerciseId,
   });
 

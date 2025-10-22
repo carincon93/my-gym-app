@@ -1,19 +1,15 @@
 import Slider from "@react-native-community/slider";
 import { router } from "expo-router";
 import React, { useEffect } from "react";
-import { StatusBar, View } from "react-native";
+import { StatusBar, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
-import Rive, {
-  Alignment,
-  AutoBind,
-  Fit,
-  useRive,
-  useRiveNumber,
-  useRiveTrigger,
-} from "rive-react-native";
+import { useRive, useRiveNumber, useRiveTrigger } from "rive-react-native";
 
+import { RivePlayer } from "@/components/rive-player";
 import { useUsers } from "@/hooks/use-users";
-import { useHideShowTabMenuStore } from "@/store/store";
+
+const MINHEIGHT = 140;
+const MAXHEIGHT = 220;
 
 export default function HeightScreen() {
   const [setRiveRef, riveRef] = useRive();
@@ -21,28 +17,29 @@ export default function HeightScreen() {
     riveRef,
     "HeightNumber"
   );
-  const { showTabMenu } = useHideShowTabMenuStore();
 
   const { createOrUpdateUser, user } = useUsers();
 
   useRiveTrigger(riveRef, "NextButtonPressed", async () => {
-    handleSubmit();
+    await handleSubmit();
+
+    router.push("/weight");
   });
 
   const handleSubmit = async () => {
-    if (!heightNumber) return;
+    if (!heightNumber || heightNumber === user?.height) return;
 
     await createOrUpdateUser({
       id: user?.id,
-      height: heightNumber !== user?.height ? heightNumber : user?.height,
+      height: heightNumber,
       gender: "undefined",
     });
-
-    router.push("/weight");
   };
 
   useEffect(() => {
     if (!user || !riveRef) return;
+
+    riveRef.play();
 
     setHeightNumber(user.height);
   }, [user, setHeightNumber, riveRef]);
@@ -54,31 +51,28 @@ export default function HeightScreen() {
         translucent
         barStyle="light-content"
       />
-      <Rive
+      <RivePlayer
         ref={setRiveRef}
         artboardName="Height"
-        resourceName="lilo2"
-        stateMachineName="Height State Machine"
-        autoplay={true}
-        dataBinding={AutoBind(true)}
-        style={{ width: "100%", height: "100%" }}
-        fit={Fit.Cover}
-        alignment={Alignment.Center}
+        stateMachineName="State Machine 1"
       />
-
       <Animated.View className="absolute bottom-56">
-        <Slider
-          style={{ width: 200, height: 40 }}
-          minimumValue={140}
-          maximumValue={220}
-          minimumTrackTintColor="#FFFFFF"
-          maximumTrackTintColor="#000000"
-          thumbTintColor="#FFFFFF"
-          step={1}
-          value={heightNumber}
-          onValueChange={setHeightNumber}
-          vertical={true}
-        />
+        <View className="flex-row items-center">
+          <Text className="text-white">{MINHEIGHT} cm</Text>
+          <Slider
+            style={{ width: 200, height: 40 }}
+            minimumValue={MINHEIGHT}
+            maximumValue={MAXHEIGHT}
+            minimumTrackTintColor="#FFFFFF"
+            maximumTrackTintColor="#000000"
+            thumbTintColor="#FFFFFF"
+            step={1}
+            value={heightNumber}
+            onValueChange={setHeightNumber}
+            vertical={true}
+          />
+          <Text className="text-white">{MAXHEIGHT} cm</Text>
+        </View>
       </Animated.View>
     </View>
   );

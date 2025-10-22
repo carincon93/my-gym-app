@@ -30,9 +30,9 @@ export function useUsers() {
       gender: string;
     }) => {
       if (id) {
-        return updateUser(id, { height, gender });
+        return await updateUser(id, { height, gender });
       }
-      return addUser(height, gender);
+      return await addUser(height, gender);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -45,7 +45,7 @@ export function useUsers() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id }: { id: string }) => deleteUser(id),
+    mutationFn: async ({ id }: { id: string }) => await deleteUser(id),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({

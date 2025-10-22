@@ -2,6 +2,7 @@ import {
   addUserWeight,
   deleteUserWeight,
   getAllUserWeights,
+  getInitialWeight,
   updateUserWeight,
 } from "@/services/user-weights.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,44 +10,48 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 export function useUserWeights() {
   const queryClient = useQueryClient();
 
-  const { data: userWeights, isLoading } = useQuery({
-    queryKey: ["userWeights"],
-    queryFn: () => getAllUserWeights(),
+  const { data: userWeights, isLoading: isLoadingWeights } = useQuery({
+    queryKey: ["userWeights", "all"],
+    queryFn: async () => await getAllUserWeights(),
   });
 
-  const addMutation = useMutation({
-    mutationFn: ({ weight }: { weight: number }) => addUserWeight(weight),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["userWeights"] });
+  const { data: initialWeight, isLoading: isLoadingInitial } = useQuery({
+    queryKey: ["userWeights", "initial"],
+    queryFn: async () => {
+      const list = await getInitialWeight();
+      return list[0];
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { weight?: number } }) =>
-      updateUserWeight(id, data),
+  const createOrUpdateMutation = useMutation({
+    mutationFn: async ({ id, weight }: { id?: string; weight: number }) => {
+      if (id) {
+        return await updateUserWeight(id, { weight });
+      }
+      return await addUserWeight(weight);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["userWeights"] });
-      queryClient.invalidateQueries({
-        queryKey: ["userWeights", variables.id],
-      });
+      if (variables.id) {
+        queryClient.invalidateQueries({
+          queryKey: ["userWeights", variables.id],
+        });
+      }
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id }: { id: string }) => deleteUserWeight(id),
+    mutationFn: async ({ id }: { id: string }) => await deleteUserWeight(id),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["userWeights"] });
-      queryClient.invalidateQueries({
-        queryKey: ["userWeights", variables.id],
-      });
     },
   });
 
   return {
     userWeights,
-    isLoading,
-    addUserWeight: addMutation.mutateAsync,
-    updateUserWeight: updateMutation.mutateAsync,
+    initialWeight,
+    isLoading: isLoadingWeights || isLoadingInitial,
+    createOrUpdateUserWeight: createOrUpdateMutation.mutateAsync,
     deleteUserWeight: deleteMutation.mutateAsync,
   };
 }
