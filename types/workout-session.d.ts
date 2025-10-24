@@ -3,6 +3,7 @@ export type WorkoutSessionState = {
   stop: boolean;
   isPlaying: boolean;
   showTabMenu: boolean;
+  timestamp: number;
   remainingTime: number;
 };
 

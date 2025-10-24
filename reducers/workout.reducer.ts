@@ -3,11 +3,14 @@ import {
   WorkoutSessionState,
 } from "@/types/workout-session";
 
+const WORKOUT_DURATION_IN_SEC = 90 * 60; // 1.5 hours
+
 export const initialWorkoutSessionState: WorkoutSessionState = {
   start: false,
   stop: false,
   isPlaying: false,
   showTabMenu: true,
+  timestamp: 0,
   remainingTime: 0,
 };
 
@@ -23,7 +26,9 @@ export function workoutSessionReducer(
         stop: false,
         isPlaying: true,
         showTabMenu: false,
-        remainingTime: state.remainingTime,
+        // If resuming, keep old timestamp, otherwise set new start time.
+        timestamp: state.isPlaying ? state.timestamp : Date.now(),
+        remainingTime: WORKOUT_DURATION_IN_SEC,
       };
 
     case "STOP":
@@ -33,6 +38,7 @@ export function workoutSessionReducer(
         stop: true,
         isPlaying: false,
         showTabMenu: true,
+        timestamp: 0,
         remainingTime: 0,
       };
 
