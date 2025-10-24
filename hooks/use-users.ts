@@ -15,7 +15,7 @@ export function useUsers() {
     queryKey: ["users"],
     queryFn: async () => {
       const list = await getFirstUser();
-      return list[0];
+      return list[0] ?? null;
     },
   });
 

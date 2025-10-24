@@ -19,7 +19,7 @@ export function useUserWeights() {
     queryKey: ["userWeights", "initial"],
     queryFn: async () => {
       const list = await getInitialWeight();
-      return list[0];
+      return list[0] ?? null;
     },
   });
 
