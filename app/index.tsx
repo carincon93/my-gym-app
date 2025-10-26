@@ -190,7 +190,7 @@ export default function HomeScreen() {
           <Button.LabelContent>Stop</Button.LabelContent>
         </Button>
 
-        <Button onPress={() => router.push("/(config)/split-days")}>
+        <Button onPress={() => router.push("/(config)/height")}>
           <Button.LabelContent>Go to config</Button.LabelContent>
         </Button>
       </View>
