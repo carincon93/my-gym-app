@@ -10,7 +10,7 @@ export const initialWorkoutSessionState: WorkoutSessionState = {
   stop: false,
   isPlaying: false,
   showTabMenu: true,
-  timestamp: 0,
+  maxGymTime: 0,
   remainingTime: 0,
 };
 
@@ -26,8 +26,8 @@ export function workoutSessionReducer(
         stop: false,
         isPlaying: true,
         showTabMenu: false,
-        // If resuming, keep old timestamp, otherwise set new start time.
-        timestamp: state.isPlaying ? state.timestamp : Date.now(),
+        // If resuming, keep old maxGymTime, otherwise set new start time.
+        maxGymTime: state.isPlaying ? state.maxGymTime : Date.now() + 120000,
         remainingTime: WORKOUT_DURATION_IN_SEC,
       };
 
@@ -38,7 +38,7 @@ export function workoutSessionReducer(
         stop: true,
         isPlaying: false,
         showTabMenu: true,
-        timestamp: 0,
+        maxGymTime: 0,
         remainingTime: 0,
       };
 

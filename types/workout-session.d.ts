@@ -3,7 +3,7 @@ export type WorkoutSessionState = {
   stop: boolean;
   isPlaying: boolean;
   showTabMenu: boolean;
-  timestamp: number;
+  maxGymTime: number;
   remainingTime: number;
 };
 

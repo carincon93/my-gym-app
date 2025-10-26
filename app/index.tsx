@@ -1,25 +1,40 @@
-import { RivePlayer } from "@/components/rive-player";
-import { useWorkoutSessionStore } from "@/store/useWorkoutSessionStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
-import React, { useCallback, useEffect, useRef } from "react";
+import { Button } from "heroui-native";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AppState, StatusBar, View } from "react-native";
-import { useRive, useRiveBoolean, useRiveTrigger } from "rive-react-native";
+import {
+  useRive,
+  useRiveBoolean,
+  useRiveString,
+  useRiveTrigger,
+} from "rive-react-native";
+
+import { RivePlayer } from "@/components/rive-player";
+import { useWorkoutSessionStore } from "@/store/useWorkoutSessionStore";
+import { getCurrentDay } from "@/utils/get-current-day";
 
 // const WORKOUT_DURATION_IN_SEC = 90 * 60; // 1.5 hours
 
 export default function HomeScreen() {
-  // const { numberDay, shortDay } = useMemo(() => getCurrentDay(), []);
+  const { numberDay, shortDay } = useMemo(() => getCurrentDay(), []);
 
   const [setRiveRef, riveRef] = useRive();
-  // const [, setCurrentDayNumber] = useRiveString(riveRef, "CurrentDayNumber");
-  // const [, setCurrentDayText] = useRiveString(riveRef, "CurrentDayText");
-  const [workoutSessionInitialized, setWorkoutSessionInitialized] =
-    useRiveBoolean(riveRef, "IsPlaying");
-  // const [, setMinutes] = useRiveString(riveRef, "minutes");
-  // const [, setSeconds] = useRiveString(riveRef, "seconds");
+  const [, setCurrentDayNumber] = useRiveString(riveRef, "CurrentDayNumber");
+  const [, setCurrentDayText] = useRiveString(riveRef, "CurrentDayText");
+  const [, setWorkoutSessionInitialized] = useRiveBoolean(riveRef, "IsPlaying");
+  // const [, setHourText] = useRiveString(riveRef, "HoursText");
+  // const [, setMinutesText] = useRiveString(riveRef, "MinutesText");
+  const [hourText, setHourText] = useState<string>("");
+  const [minutesText, setMinutesText] = useState<string>("");
 
-  const { dispatch, isPlaying, timestamp, showTabMenu, remainingTime, reset } =
+  const { dispatch, isPlaying, maxGymTime, showTabMenu, remainingTime, reset } =
     useWorkoutSessionStore();
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -49,6 +64,16 @@ export default function HomeScreen() {
     router.push("/(config)/split-days");
   });
 
+  const handlePlayButton = () => {
+    setWorkoutSessionInitialized(true);
+    riveRef?.trigger("TriggPlay");
+  };
+
+  const handleStopButton = () => {
+    setWorkoutSessionInitialized(false);
+    riveRef?.trigger("TriggStop");
+  };
+
   // Create refs for functions that might change
   const dispatchRef = useRef(dispatch);
   const setWorkoutSessionInitializedRef = useRef(setWorkoutSessionInitialized);
@@ -65,13 +90,16 @@ export default function HomeScreen() {
   const restoreUIState = useCallback(() => {
     console.log("===ENTER TO THE RESTORE STATE===");
     // This ensures the Rive animation reflects the persisted state
-    setWorkoutSessionInitializedRef.current(isPlayingRef.current);
-    dispatchRef.current({
-      type: "SHOWTABMENU",
-      payload: !isPlayingRef.current,
-    });
+
+    if (isPlaying) {
+      setWorkoutSessionInitialized(true);
+      riveRef?.trigger("TriggPlay");
+    } else {
+      setWorkoutSessionInitialized(false);
+      riveRef?.trigger("TriggStop");
+    }
     // restoreTimer();
-  }, []);
+  }, [riveRef, setWorkoutSessionInitialized, isPlaying]);
 
   useFocusEffect(
     // Callback should be wrapped in `React.useCallback` to avoid running the effect too often.
@@ -79,14 +107,40 @@ export default function HomeScreen() {
       // Invoked whenever the route is focused.
       console.log("=======Hello, I'm focused!=====");
 
-      const timeout = setTimeout(() => restoreUIState(), 50);
+      restoreUIState();
+
+      // Start the interval only when the screen is focused and a workout is playing
+      if (isPlayingRef.current && maxGymTime > 0) {
+        const updateElapsedTime = () => {
+          const elapsed = maxGymTime - Date.now();
+
+          if (elapsed <= 0) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            dispatchRef.current({ type: "STOP" }); // Reset the workout session state
+            return;
+          }
+          const hours = Math.floor(elapsed / (1000 * 60 * 60));
+          const minutes = Math.floor(
+            (elapsed % (1000 * 60 * 60)) / (1000 * 60)
+          );
+
+          setHourText(String(hours).padStart(2, "0"));
+          setMinutesText(String(minutes).padStart(2, "0"));
+        };
+
+        updateElapsedTime(); // Run once immediately
+        intervalRef.current = setInterval(updateElapsedTime, 1000);
+      }
 
       // Return function is invoked whenever the route gets out of focus.
       return () => {
         console.log("=============This route is now unfocused.=============");
-        clearTimeout(timeout);
+        // Clear the interval when the screen is unfocused
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
       };
-    }, [restoreUIState])
+    }, [restoreUIState, maxGymTime])
   );
 
   // Detect when
@@ -105,11 +159,18 @@ export default function HomeScreen() {
     };
   }, [restoreUIState]);
 
+  useEffect(() => {
+    setCurrentDayText(shortDay);
+    setCurrentDayNumber(numberDay);
+  }, [shortDay, numberDay, setCurrentDayText, setCurrentDayNumber]);
+
   console.log("=============== OUT ================");
   console.log("isPlaying", isPlaying);
   console.log("showTabMenu", showTabMenu);
-  console.log("timestamp", timestamp);
+  console.log("maxGymTime", maxGymTime);
   console.log("remainingTime", remainingTime);
+  console.log("hourText", hourText);
+  console.log("minutesText", minutesText);
   console.log("=============== END OUT ================");
 
   return (
@@ -121,13 +182,17 @@ export default function HomeScreen() {
       />
 
       <View className="absolute z-10 bottom-50">
-        {/* <Button onPress={handlePlayButton}>
+        <Button onPress={handlePlayButton}>
           <Button.LabelContent>Play</Button.LabelContent>
         </Button>
 
         <Button onPress={handleStopButton}>
           <Button.LabelContent>Stop</Button.LabelContent>
-        </Button> */}
+        </Button>
+
+        <Button onPress={() => router.push("/(config)/split-days")}>
+          <Button.LabelContent>Go to config</Button.LabelContent>
+        </Button>
       </View>
 
       <RivePlayer
