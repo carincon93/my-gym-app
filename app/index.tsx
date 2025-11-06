@@ -1,177 +1,128 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router, useFocusEffect } from "expo-router";
-import { Button } from "heroui-native";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { AppState, StatusBar, View } from "react-native";
-import {
-  useRive,
-  useRiveBoolean,
-  useRiveString,
-  useRiveTrigger,
-} from "rive-react-native";
+import { useRive, useRiveBoolean } from "rive-react-native";
 
 import { RivePlayer } from "@/components/rive-player";
 import { useWorkoutSessionStore } from "@/store/useWorkoutSessionStore";
-import { getCurrentDay } from "@/utils/get-current-day";
+import { logWithTime } from "@/utils/log-whit-time";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router, useFocusEffect } from "expo-router";
+import { Button } from "heroui-native";
 
 // const WORKOUT_DURATION_IN_SEC = 90 * 60; // 1.5 hours
+const STORAGE_KEY = "workout-session-storage";
 
 export default function HomeScreen() {
-  const { numberDay, shortDay } = useMemo(() => getCurrentDay(), []);
-
   const [setRiveRef, riveRef] = useRive();
-  const [, setCurrentDayNumber] = useRiveString(riveRef, "CurrentDayNumber");
-  const [, setCurrentDayText] = useRiveString(riveRef, "CurrentDayText");
   const [, setWorkoutSessionInitialized] = useRiveBoolean(riveRef, "IsPlaying");
-  // const [, setHourText] = useRiveString(riveRef, "HoursText");
-  // const [, setMinutesText] = useRiveString(riveRef, "MinutesText");
-  const [hourText, setHourText] = useState<string>("");
-  const [minutesText, setMinutesText] = useState<string>("");
-
-  const { dispatch, isPlaying, maxGymTime, showTabMenu, remainingTime, reset } =
-    useWorkoutSessionStore();
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const {
+    dispatch,
+    start,
+    stop,
+    maxGymTime,
+    showTabMenu,
+    remainingTime,
+    reset,
+  } = useWorkoutSessionStore();
 
-  // Play trigger: dispatch PLAY
-  useRiveTrigger(riveRef, "TriggPlay", async () => {
-    console.log("Play clicked");
-    dispatch({ type: "PLAY" });
-    // await saveStartTime();
-    const storageItem = await AsyncStorage.getItem("workout-session-storage");
-    console.log("storageItem", storageItem);
-  });
-
-  // Stop trigger: dispatch STOP
-  useRiveTrigger(riveRef, "TriggStop", async () => {
-    console.log("Stop clicked");
-    dispatch({ type: "STOP" });
-    reset();
-    const storageItem = await AsyncStorage.getItem("workout-session-storage");
-    console.log("storageItem", storageItem);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-  });
-
-  // AddSet trigger: dispatch AddSet
-  useRiveTrigger(riveRef, "TriggAddSets", async () => {
-    console.log("Add sets clicked");
-    router.push("/(config)/split-days");
-  });
-
-  const handlePlayButton = () => {
-    setWorkoutSessionInitialized(true);
-    riveRef?.trigger("TriggPlay");
-  };
-
-  const handleStopButton = () => {
-    setWorkoutSessionInitialized(false);
-    riveRef?.trigger("TriggStop");
-  };
-
-  // Create refs for functions that might change
-  const dispatchRef = useRef(dispatch);
-  const setWorkoutSessionInitializedRef = useRef(setWorkoutSessionInitialized);
-  const isPlayingRef = useRef(isPlaying);
-
-  // Keep them updated without changing the callback identity
-  useEffect(() => {
+  // TRIGGERS
+  const handlePlayButton = useCallback(() => {
     if (!riveRef) return;
-    isPlayingRef.current = isPlaying;
-    dispatchRef.current = dispatch;
-    setWorkoutSessionInitializedRef.current = setWorkoutSessionInitialized;
-  }, [riveRef, isPlaying, dispatch, setWorkoutSessionInitialized]);
 
-  const restoreUIState = useCallback(() => {
-    console.log("===ENTER TO THE RESTORE STATE===");
-    // This ensures the Rive animation reflects the persisted state
+    setWorkoutSessionInitialized(true);
+    dispatch({ type: "PLAY" });
 
-    if (isPlaying) {
-      setWorkoutSessionInitialized(true);
-      riveRef?.trigger("TriggPlay");
-    } else {
-      setWorkoutSessionInitialized(false);
-      riveRef?.trigger("TriggStop");
+    // riveRef?.trigger("TriggPlay");
+  }, [dispatch, riveRef, setWorkoutSessionInitialized]);
+
+  const handleStopButton = useCallback(() => {
+    if (!riveRef) return;
+
+    setWorkoutSessionInitialized(false);
+    dispatch({ type: "STOP" });
+
+    // riveRef?.trigger("TriggStop");
+  }, [dispatch, riveRef, setWorkoutSessionInitialized]);
+
+  // RESTORE THE UI
+  const restoreUIState = useCallback(async () => {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEY);
+
+      if (data) {
+        const { state } = JSON.parse(data);
+        const elapsedInSec = Math.floor((Date.now() - state.maxGymTime) / 1000);
+        const remainingInSec = Math.max(state.remainingTime - elapsedInSec, 0);
+
+        logWithTime(elapsedInSec, remainingInSec);
+
+        // dispatch({ type: "RESTORE_TIMER", payload: remaining });
+
+        if (start) {
+          handlePlayButton();
+        } else if (stop) {
+          handleStopButton();
+        }
+      }
+
+      logWithTime("STORAGE", data);
+    } catch (error) {
+      console.error("Error restoring UI state:", error);
     }
-    // restoreTimer();
-  }, [riveRef, setWorkoutSessionInitialized, isPlaying]);
+  }, [handlePlayButton, handleStopButton, start, stop]);
 
+  useEffect(() => {
+    if (!start || stop) return;
+
+    logWithTime("start", start);
+    logWithTime("stop", stop);
+  }, [start, stop]);
+
+  // RESTORE STATE WHEN THE USER RETURNS FROM OTHER ROUTE OR FROM BACKGROUND
   useFocusEffect(
     // Callback should be wrapped in `React.useCallback` to avoid running the effect too often.
     useCallback(() => {
       // Invoked whenever the route is focused.
-      console.log("=======Hello, I'm focused!=====");
+      logWithTime("=======Hello, I'm focused!=====");
 
+      // Restore UI state when focused
       restoreUIState();
 
-      // Start the interval only when the screen is focused and a workout is playing
-      if (isPlayingRef.current && maxGymTime > 0) {
-        const updateElapsedTime = () => {
-          const elapsed = maxGymTime - Date.now();
-
-          if (elapsed <= 0) {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-            dispatchRef.current({ type: "STOP" }); // Reset the workout session state
-            return;
-          }
-          const hours = Math.floor(elapsed / (1000 * 60 * 60));
-          const minutes = Math.floor(
-            (elapsed % (1000 * 60 * 60)) / (1000 * 60)
-          );
-
-          setHourText(String(hours).padStart(2, "0"));
-          setMinutesText(String(minutes).padStart(2, "0"));
-        };
-
-        updateElapsedTime(); // Run once immediately
-        intervalRef.current = setInterval(updateElapsedTime, 1000);
-      }
+      // Capture current interval so the cleanup uses a stable reference
+      const interval = intervalRef.current;
 
       // Return function is invoked whenever the route gets out of focus.
       return () => {
-        console.log("=============This route is now unfocused.=============");
+        logWithTime("=============This route is now unfocused.=============");
         // Clear the interval when the screen is unfocused
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-        }
+        if (interval) clearInterval(interval);
       };
-    }, [restoreUIState, maxGymTime])
+    }, [restoreUIState])
   );
 
-  // Detect when
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") {
-        console.log("=======Hello, I'm come back!=====");
+        logWithTime("=======Hello, I'm come back!=====");
 
         // Restore the last state
         restoreUIState();
       }
     });
 
+    // Capture current interval so the cleanup uses a stable reference
+    const interval = intervalRef.current;
+
     return () => {
+      logWithTime("=============This app is now in background.=============");
+      // Clear the interval when the app is in background
+      if (interval) clearInterval(interval);
+
       subscription.remove();
     };
   }, [restoreUIState]);
-
-  useEffect(() => {
-    setCurrentDayText(shortDay);
-    setCurrentDayNumber(numberDay);
-  }, [shortDay, numberDay, setCurrentDayText, setCurrentDayNumber]);
-
-  console.log("=============== OUT ================");
-  console.log("isPlaying", isPlaying);
-  console.log("showTabMenu", showTabMenu);
-  console.log("maxGymTime", maxGymTime);
-  console.log("remainingTime", remainingTime);
-  console.log("hourText", hourText);
-  console.log("minutesText", minutesText);
-  console.log("=============== END OUT ================");
 
   return (
     <View className="flex-1 items-center justify-center">

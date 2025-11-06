@@ -72,33 +72,7 @@ function AppProviders() {
               headerShown: false,
               contentStyle: { backgroundColor: "#000000" },
             }}
-          >
-            <Stack.Screen
-              name="(config)/height"
-              options={{
-                animation: "slide_from_right",
-                animationDuration: 350,
-                contentStyle: { backgroundColor: "#FF3E3E" },
-              }}
-            />
-            <Stack.Screen
-              name="(config)/weight"
-              options={{
-                animation: "slide_from_right",
-                animationDuration: 350,
-                contentStyle: { backgroundColor: "#FF3E3E" },
-              }}
-            />
-            <Stack.Screen
-              name="(config)/split-days"
-              options={{
-                animation: "slide_from_right",
-                animationDuration: 350,
-                contentStyle: { backgroundColor: "#131010" },
-              }}
-            />
-            <Stack.Screen name="(config)/favs-exercises" />
-          </Stack>
+          />
           <StatusBar style="auto" />
           <AnimatedTabMenu />
         </HeroUINativeProvider>

@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  Image,
+  Pressable,
+  StatusBar,
+  Text,
+  View,
+} from "react-native";
 
 import { useExercises } from "@/hooks/use-exercises";
 import { getAllFavorites, syncFavorites } from "@/services/favorites.service";
+import { getImageSource } from "@/utils/get-image-source";
 
 export default function FavsExercisesScreen() {
   const { exercises } = useExercises();
@@ -29,11 +37,19 @@ export default function FavsExercisesScreen() {
     );
   };
 
+  console.log("You are in favorites screen");
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Favoritos</Text>
+    <View className="flex-1 items-center justify-center bg-red-400">
+      <StatusBar
+        backgroundColor="transparent"
+        translucent
+        barStyle="light-content"
+      />
+      <Text>Favoritos</Text>
 
       <FlatList
+        className="flex-1 bg-slate-500 size-full"
         data={exercises}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
@@ -41,13 +57,9 @@ export default function FavsExercisesScreen() {
 
           return (
             <Pressable onPress={() => toggleFavorite(item.id)}>
-              <View
-                style={[
-                  styles.listItem,
-                  { backgroundColor: isFav ? "tomato" : "grey" },
-                ]}
-              >
-                <Text style={styles.text}>{item.name}</Text>
+              <View>
+                <Image source={getImageSource(item.image)} />
+                <Text>{item.name}</Text>
               </View>
             </Pressable>
           );
@@ -56,19 +68,3 @@ export default function FavsExercisesScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-  },
-  listItem: {
-    margin: 10,
-    padding: 10,
-    borderRadius: 8,
-  },
-  text: {
-    color: "white",
-  },
-});

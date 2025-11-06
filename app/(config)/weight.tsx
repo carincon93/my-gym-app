@@ -21,7 +21,7 @@ export default function WeightScreen() {
   useRiveTrigger(riveRef, "NextButtonPressed", async () => {
     await handleSubmit();
 
-    router.push("/split-days");
+    router.push("/favs-exercises");
   });
 
   const handleSubmit = async () => {
