@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { AppState, StatusBar, View } from "react-native";
 import { useRive, useRiveBoolean } from "rive-react-native";
 
 import { RivePlayer } from "@/components/rive-player";
 import { useWorkoutSessionStore } from "@/store/useWorkoutSessionStore";
-import { logWithTime } from "@/utils/log-whit-time";
+import { logWithTime } from "@/utils/log-with-time";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
 import { Button } from "heroui-native";
